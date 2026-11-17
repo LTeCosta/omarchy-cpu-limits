@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.ltecosta.cpu-limits",
+  "name": "CPU Limits",
+  "version": "3.0.0",
+  "author": "Lucas Costa",
+  "license": "MIT",
+  "description": "Per-profile CPU frequency ceilings, turbo and package power limits with live CPU telemetry, for Intel CPUs under intel_pstate.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Panel.qml"
+  },
+  "barWidget": {
+    "displayName": "CPU Limits",
+    "description": "Live package power, temperature, clocks and throttling; edit frequency ceilings, turbo and PL1/PL2 for each platform profile.",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "barLabel": "None"
+    },
+    "schema": [
+      {
+        "key": "barLabel",
+        "type": "enum",
+        "label": "Bar label",
+        "options": [
+          "None",
+          "Temperature",
+          "Power"
+        ],
+        "defaultValue": "None",
+        "description": "Show the package temperature or package power next to the bar icon."
+      }
+    ]
+  }
+}

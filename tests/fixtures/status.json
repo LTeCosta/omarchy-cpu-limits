@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "updated": 1794680000.5,
+  "pid": 1234,
+  "revision": 3,
+  "applied_revision": 3,
+  "profile": "performance",
+  "profiles": {
+    "quiet": {"ceilings_mhz": {"preferred": 3000, "p": 3000, "e": 2500}, "turbo": true, "pl1_w": 45, "pl2_w": 65, "custom": true, "firmware_pl1_w": null, "firmware_pl2_w": null},
+    "balanced": {"ceilings_mhz": {"preferred": 5400, "p": 5300, "e": 4000}, "turbo": true, "pl1_w": null, "pl2_w": null, "custom": false, "firmware_pl1_w": 160, "firmware_pl2_w": 175},
+    "performance": {"ceilings_mhz": {"preferred": 5400, "p": 5200, "e": 3800}, "turbo": true, "pl1_w": null, "pl2_w": null, "custom": true, "firmware_pl1_w": 160, "firmware_pl2_w": 175}
+  },
+  "applied": true,
+  "error": null,
+  "warnings": [],
+  "changed_at": 1794679990.0,
+  "turbo": true,
+  "limits": {"step_mhz": 100, "power_step_w": 5, "stale_after_s": 10, "min_w": 15, "max_w": 215},
+  "groups": [
+    {"id": "preferred", "label": "Preferred P-cores", "cpus": [2], "min_mhz": 800, "max_mhz": 5800, "default_mhz": 5400, "avg_mhz": 3420, "peak_mhz": 5280, "ceiling_mhz": [5400]},
+    {"id": "p", "label": "P-cores", "cpus": [0, 1], "min_mhz": 800, "max_mhz": 5600, "default_mhz": 5300, "avg_mhz": 3110, "peak_mhz": 5010, "ceiling_mhz": [5200]},
+    {"id": "e", "label": "E-cores", "cpus": [3], "min_mhz": 800, "max_mhz": 4100, "default_mhz": 4000, "avg_mhz": 2990, "peak_mhz": 3670, "ceiling_mhz": [3800]}
+  ],
+  "power": {
+    "pl1_w": 160, "pl2_w": 175, "pl4_w": 215,
+    "mmio": {"pl1_w": 55, "pl2_w": 125},
+    "effective_pl1_w": 55, "effective_pl2_w": 125,
+    "package_w": 43.8
+  },
+  "thermal": {"package_c": 77, "crit_c": 100, "throttle_count": 7635, "throttle_ms": 53328, "throttle_pct": 12.5, "throttling": true},
+  "fans": [{"label": "CPU", "rpm": 5000}],
+  "load_pct": 11,
+  "epp": "performance",
+  "governor": "powersave"
+}

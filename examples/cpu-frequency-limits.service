@@ -1,0 +1,41 @@
+[Unit]
+Description=Maintain CPU limits and publish CPU telemetry
+Wants=power-profiles-daemon.service
+After=systemd-tmpfiles-setup.service asusd.service power-profiles-daemon.service
+Before=graphical.target
+
+[Service]
+Type=notify
+NotifyAccess=main
+WatchdogSec=30s
+ExecStart=/usr/local/libexec/workstation-cpu-limits --watch
+Restart=on-failure
+RestartSec=2s
+RuntimeDirectory=workstation-cpu-limits
+RuntimeDirectoryPreserve=yes
+StateDirectory=workstation-cpu-limits
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_UNIX
+PrivateDevices=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectKernelLogs=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+UMask=0022
+ReadWritePaths=/sys/devices/system/cpu /sys/devices/virtual/powercap /var/lib/workstation-cpu-limits
+
+[Install]
+WantedBy=graphical.target power-profiles-daemon.service
