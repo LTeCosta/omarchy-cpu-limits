@@ -19,7 +19,7 @@ The power profile still chooses the governor, minimum frequency and energy-perfo
 | systemd unit | `/etc/systemd/system/cpu-frequency-limits.service` | `examples/cpu-frequency-limits.service` |
 | PolicyKit actions | `/usr/share/polkit-1/actions/org.workstation.cpu-limits.policy` | `examples/org.workstation.cpu-limits.policy` |
 | Default ceilings | `/etc/tmpfiles.d/cpu-performance.conf` | `examples/cpu-performance.conf`, adjusted to the CPU |
-| Bar widget | `~/.config/omarchy/plugins/io.github.ltecosta.cpu-limits/` | this directory |
+| Bar widget and plugin service | `~/.config/omarchy/plugins/io.github.ltecosta.cpu-limits/` | this directory |
 | Check | run from the checkout | `backend/check.py` |
 
 ## Install
@@ -95,7 +95,7 @@ An invalid `settings.json` is recovered with `--reset all` or `--set all '<json>
 
 ## Bar widget
 
-The widget reads `status.json` in the shell process, every 2 s while the panel is open and every 10 s while it is closed. A status with another schema is refused, and the panel asks to restart the shell or the service. The icon takes the bar's urgent color on an error or a stale status (older than 10 s, a stopped service) and the accent color while throttling. The tooltip shows temperature, power, load and ceilings. The `barLabel` setting (`None`, `Temperature`, `Power`) adds a reading beside the icon.
+The plugin's service (`Service.qml`) reads `status.json` in the shell process once for every monitor's bar, every 2 s while any monitor's panel is open and every 10 s otherwise. Each monitor's widget binds to it and keeps its own panel, drafts and keyboard cursor; after a save, the service re-reads the status so every bar shows it. A status with another schema is refused, and the panel asks to restart the shell or the service. The icon takes the bar's urgent color on an error or a stale status (older than 10 s, a stopped service) and the accent color while throttling. The tooltip shows temperature, power, load and ceilings. The `barLabel` setting (`None`, `Temperature`, `Power`) adds a reading beside the icon.
 
 The panel shows package power, temperature, load and fan speed, the throttling line and any warnings. For the selected profile it has one row per core group (ceiling, a marker at the live average clock, and the peak clock), the turbo switch, and PL1/PL2 rows. A power row shows the profile's MSR setting, or its firmware value, or the live MSR reading; its caption gives the effective limit and the MMIO value, and turns to the accent color when the shown value is above the MMIO limit.
 
@@ -114,7 +114,10 @@ Edits are drafts per profile, marked `*` on that profile; a draft equal to the s
 ```bash
 omarchy-shell io.github.ltecosta.cpu-limits toggle   # open, close, show, hide
 omarchy-shell io.github.ltecosta.cpu-limits state
+omarchy-shell io.github.ltecosta.cpu-limits refresh
 ```
+
+The service owns the IPC target. `open`, `show` and `toggle` act on the focused monitor's panel through `omarchy-shell shell summon|toggle`, and `close` and `hide` close the open panel through `omarchy-shell shell hide`. `state` prints `kind`, the active `profile` and `error` from the status, `selected` and `dirty` from an open panel (else from the first monitor's widget), and `opened`, whether any panel is open. `refresh` re-reads the status.
 
 ## Checks
 

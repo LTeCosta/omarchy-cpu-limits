@@ -6,17 +6,21 @@ import qs.Commons
 import qs.Ui
 import "Model.js" as Model
 
-// CPU Limits bar widget. Reads the status that cpu-frequency-limits.service
-// publishes in /run (no subprocess, no polling of the helper) and saves
+// CPU Limits bar widget, one per monitor. The status that
+// cpu-frequency-limits.service publishes in /run is read once for every
+// monitor by the plugin's service (Service.qml), which also owns the IPC
+// target. This widget keeps its panel, drafts and keyboard cursor, and saves
 // settings through `pkexec workstation-cpu-limits --set|--reset`.
 Panel {
   id: root
   moduleName: "io.github.ltecosta.cpu-limits"
-  ipcTarget: moduleName
   manageIpc: false
 
   readonly property string helper: "/usr/local/libexec/workstation-cpu-limits"
-  property var parsed: ({ status: null, stale: true, error: "Reading CPU status…", warnings: [] })
+  readonly property var service: bar && bar.shell && typeof bar.shell.serviceFor === "function"
+    ? bar.shell.serviceFor(moduleName) : null
+  // Until the service is there, a neutral "reading" state that marks nothing.
+  readonly property var parsed: service && service.parsed ? service.parsed : Model.unavailable("Reading CPU status…")
   readonly property var status: parsed.status
   property string selectedProfile: ""
   property var drafts: ({})
@@ -25,9 +29,9 @@ Panel {
   property string actionNotice: ""
   property bool cursorActive: false
   property var cursorItem: null
-  // A reloaded or moved widget briefly overlaps its old instance; register
-  // the IPC target only after the old one has released it.
-  property bool ipcReady: false
+  // Identifies this widget's panel in the service's report of open panels.
+  readonly property string instanceKey: String(Math.random()).slice(2) + "-" + Date.now()
+  readonly property var panelReport: ({ opened: opened, selected: selectedProfile, dirty: dirty })
 
   readonly property color foreground: bar ? bar.foreground : Color.foreground
   readonly property color urgent: bar ? bar.urgent : Color.urgent
@@ -76,7 +80,14 @@ Panel {
     })
   }
 
-  function refresh() { statusFile.reload() }
+  // The service's IPC target stands in when serviceFor() has no answer (the
+  // service is still loading, or a replacement bar scopes it away).
+  function ipc(args) { Quickshell.execDetached(["omarchy-shell", moduleName].concat(args)) }
+
+  // A re-read reaches every monitor's widget through the service.
+  function refresh() { if (service) service.refresh(); else ipc(["refresh"]) }
+
+  function reportPanel() { if (service) service.reportPanel(instanceKey, panelReport) }
 
   function setDraft(next) {
     actionError = ""
@@ -184,11 +195,6 @@ Panel {
     })
   }
 
-  function stateIpc() {
-    return JSON.stringify({ kind: barKind, profile: status ? status.profile : "", error: parsed.error,
-      selected: selectedProfile, dirty: dirty })
-  }
-
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
 
@@ -204,47 +210,16 @@ Panel {
     }
   }
 
+  onPanelReportChanged: reportPanel()
+  onServiceChanged: reportPanel()
+  Component.onDestruction: if (service) service.forgetPanel(instanceKey)
+
   onStatusChanged: {
     if (!status) return
     if (profileNames.indexOf(selectedProfile) < 0) selectedProfile = status.profile
     // Prune only removes, so an unchanged count means nothing to drop.
     var pruned = Model.pruneDrafts(drafts, status.profiles)
     if (Object.keys(pruned).length !== Object.keys(drafts).length) drafts = pruned
-  }
-
-  Timer {
-    interval: 150
-    running: true
-    onTriggered: root.ipcReady = true
-  }
-
-  ShellIpc {
-    enabled: root.ipcReady
-    target: root.ipcTarget
-    function open(): void { root.open() }
-    function close(): void { root.close() }
-    function show(): void { root.open() }
-    function hide(): void { root.close() }
-    function toggle(): void { root.toggle() }
-    function state(): string { return root.stateIpc() }
-  }
-
-  FileView {
-    id: statusFile
-    path: "/run/workstation-cpu-limits/status.json"
-    printErrors: false
-    onLoaded: root.parsed = Model.parseStatus(text(), Date.now() / 1000)
-    onLoadFailed: root.parsed = Model.parseStatus("", Date.now() / 1000)
-  }
-
-  // The service rewrites the status every two seconds. Follow it closely while
-  // the panel is open; the bar icon only needs a slower look.
-  Timer {
-    interval: root.opened ? 2000 : 10000
-    running: true
-    repeat: true
-    triggeredOnStart: true
-    onTriggered: root.refresh()
   }
 
   Process {
@@ -276,7 +251,7 @@ Panel {
     text: "󰻠"
     labelText: Model.barLabel(root.parsed, String(root.setting("barLabel", "None")).toLowerCase())
     tooltipText: Model.tooltip(root.parsed)
-    active: root.barKind !== "ok"
+    active: root.service !== null && root.barKind !== "ok"
     activeColor: root.barKind === "error" ? root.urgent : Color.accent
     onPressed: function(buttonCode) { root.toggle() }
   }

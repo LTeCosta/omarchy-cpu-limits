@@ -294,5 +294,32 @@ const tests = {
     assert.strictEqual(JSON.stringify(args.slice(0, 2)), JSON.stringify(["--set", "quiet"]))
     assert.deepStrictEqual(Object.keys(JSON.parse(args[2])).sort(), ["ceilings_mhz", "pl1_w", "pl2_w", "turbo"])
   },
+  "panel reports count open panels and normalize untrusted fields"() {
+    let panels = Model.withPanel({}, "a-1", { opened: false, selected: "quiet", dirty: false })
+    panels = Model.withPanel(panels, "b-2", { opened: true, selected: "performance", dirty: true })
+    assert.strictEqual(Model.openPanelCount(panels), 1)
+    panels = Model.withPanel(panels, "a-1", { opened: true, selected: "quiet", dirty: false })
+    assert.strictEqual(Model.openPanelCount(panels), 2)
+    assert.deepStrictEqual(Object.keys(panels), ["b-2", "a-1"])
+    panels = Model.withoutPanel(panels, "b-2")
+    assert.deepStrictEqual(plain(panels), { "a-1": { opened: true, selected: "quiet", dirty: false } })
+    assert.strictEqual(Model.openPanelCount(Model.withoutPanel(panels, "a-1")), 0)
+    assert.deepStrictEqual(plain(Model.withPanel({}, "x", { opened: "yes", selected: 3, dirty: 1 }).x),
+      { opened: false, selected: "", dirty: false })
+    assert.deepStrictEqual(plain(Model.withPanel({}, "x", null).x), { opened: false, selected: "", dirty: false })
+  },
+  "state report speaks for an open panel, else the first reported"() {
+    const parsed = parse(fixture())
+    assert.deepStrictEqual(plain(Model.stateReport(parsed, {})),
+      { kind: "throttling", profile: "performance", error: "", selected: "", dirty: false, opened: false })
+    let panels = Model.withPanel({}, "a", { opened: false, selected: "quiet", dirty: true })
+    assert.deepStrictEqual(plain(Model.stateReport(parsed, panels)),
+      { kind: "throttling", profile: "performance", error: "", selected: "quiet", dirty: true, opened: false })
+    panels = Model.withPanel(panels, "b", { opened: true, selected: "balanced", dirty: false })
+    assert.deepStrictEqual(plain(Model.stateReport(parsed, panels)),
+      { kind: "throttling", profile: "performance", error: "", selected: "balanced", dirty: false, opened: true })
+    const reading = Model.stateReport(Model.unavailable("Reading CPU status…"), panels)
+    assert.deepStrictEqual([reading.kind, reading.profile, reading.error], ["error", "", "Reading CPU status…"])
+  },
 }
 for (const [name, body] of Object.entries(tests)) test(name, body)

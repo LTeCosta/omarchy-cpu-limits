@@ -311,3 +311,39 @@ function barLabel(parsed, mode) {
 function helperArgs(profile, settings) {
   return ["--set", profile, JSON.stringify(settingsOf(settings))]
 }
+
+// ---------- Panels: { instanceKey: { opened, selected, dirty } } ----------
+// Every monitor's widget reports its panel to the service, which polls faster
+// while any panel is open and answers the state IPC for them.
+
+function withPanel(panels, key, report) {
+  var copy = copyDrafts(panels, key)
+  copy[key] = { opened: !!report && report.opened === true,
+    selected: report && typeof report.selected === "string" ? report.selected : "",
+    dirty: !!report && report.dirty === true }
+  return copy
+}
+
+function withoutPanel(panels, key) { return copyDrafts(panels, key) }
+
+function openPanelCount(panels) {
+  var count = 0
+  for (var key in panels) if (panels[key].opened) count++
+  return count
+}
+
+// The panel the state IPC speaks for: an open one, else the first reported.
+function reportedPanel(panels) {
+  var first = null
+  for (var key in panels) {
+    if (panels[key].opened) return panels[key]
+    if (first === null) first = panels[key]
+  }
+  return first
+}
+
+function stateReport(parsed, panels) {
+  var panel = reportedPanel(panels)
+  return { kind: barKind(parsed), profile: parsed.status ? parsed.status.profile : "", error: parsed.error,
+    selected: panel ? panel.selected : "", dirty: panel ? panel.dirty : false, opened: openPanelCount(panels) > 0 }
+}

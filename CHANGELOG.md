@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.1.0
+
+- A plugin service reads the CPU status once for every monitor's bar, every 2 s while any monitor's panel is open and every 10 s otherwise, and owns the IPC target; a save on one monitor refreshes every bar.
+- `open`, `show`, `close`, `hide` and `toggle` act on the focused monitor's panel; `state` also reports whether a panel is open, and `refresh` re-reads the status.
+
 ## 3.0.0
 
 - The widget's id and IPC target are `io.github.ltecosta.cpu-limits`.
