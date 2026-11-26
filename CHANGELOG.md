@@ -3,6 +3,7 @@
 ## 3.1.0
 
 - A plugin service reads the CPU status once for every monitor's bar, every 2 s while any monitor's panel is open and every 10 s otherwise, and owns the IPC target; a save on one monitor refreshes every bar.
+- The widget reaches the service under the built-in bar and under replacement bars, whose shell does not hand out plugin services, and follows a service that loads late, is reloaded or stops.
 - `open`, `show`, `close`, `hide` and `toggle` act on the focused monitor's panel; `state` also reports whether a panel is open, and `refresh` re-reads the status.
 
 ## 3.0.0

@@ -5,6 +5,7 @@ import Quickshell.Io
 import qs.Commons
 import qs.Ui
 import "Model.js" as Model
+import "ServiceLink.js" as ServiceLink
 
 // CPU Limits bar widget, one per monitor. The status that
 // cpu-frequency-limits.service publishes in /run is read once for every
@@ -17,8 +18,14 @@ Panel {
   manageIpc: false
 
   readonly property string helper: "/usr/local/libexec/workstation-cpu-limits"
-  readonly property var service: bar && bar.shell && typeof bar.shell.serviceFor === "function"
+  // The shell's answer under the built-in bar; under a replacement bar, whose
+  // shell has no plugin services, the service ServiceLink.js holds.
+  readonly property var shellService: bar && bar.shell && typeof bar.shell.serviceFor === "function"
     ? bar.shell.serviceFor(moduleName) : null
+  property var linkedService: null
+  readonly property var service: shellService ? shellService : linkedService
+  // Kept so the same function can be unsubscribed.
+  property var serviceListener: null
   // Until the service is there, a neutral "reading" state that marks nothing.
   readonly property var parsed: service && service.parsed ? service.parsed : Model.unavailable("Reading CPU status…")
   readonly property var status: parsed.status
@@ -80,8 +87,7 @@ Panel {
     })
   }
 
-  // The service's IPC target stands in when serviceFor() has no answer (the
-  // service is still loading, or a replacement bar scopes it away).
+  // The service's IPC target stands in while no service is reachable.
   function ipc(args) { Quickshell.execDetached(["omarchy-shell", moduleName].concat(args)) }
 
   // A re-read reaches every monitor's widget through the service.
@@ -212,7 +218,15 @@ Panel {
 
   onPanelReportChanged: reportPanel()
   onServiceChanged: reportPanel()
-  Component.onDestruction: if (service) service.forgetPanel(instanceKey)
+  Component.onCompleted: {
+    serviceListener = function(next) { root.linkedService = next }
+    ServiceLink.subscribe(serviceListener)
+    linkedService = ServiceLink.current()
+  }
+  Component.onDestruction: {
+    ServiceLink.unsubscribe(serviceListener)
+    if (service) service.forgetPanel(instanceKey)
+  }
 
   onStatusChanged: {
     if (!status) return

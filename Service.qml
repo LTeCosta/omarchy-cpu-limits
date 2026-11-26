@@ -3,16 +3,20 @@ import Quickshell
 import Quickshell.Io
 import qs.Commons
 import "Model.js" as Model
+import "ServiceLink.js" as ServiceLink
 
 // CPU Limits service: the shell creates it once, however many monitors show
 // the bar widget. It reads the status that cpu-frequency-limits.service
 // publishes in /run for every widget and owns the plugin's IPC target.
 // Each widget keeps its own panel, drafts and pkexec writer, reports its
-// panel here, and binds to `parsed`.
+// panel here, and binds to `parsed`. Widgets reach it through
+// bar.shell.serviceFor() under the built-in bar, and through ServiceLink.js
+// under a replacement bar, whose shell does not hand out plugin services.
 Scope {
   id: root
 
   readonly property string pluginId: "io.github.ltecosta.cpu-limits"
+  property string statusPath: "/run/workstation-cpu-limits/status.json"
   property var parsed: Model.unavailable("Reading CPU status…")
   // { instanceKey: { opened, selected, dirty } }, one entry per live widget.
   property var panels: ({})
@@ -32,6 +36,9 @@ Scope {
   function shellPanel(action) { Quickshell.execDetached(["omarchy-shell", "shell", action, pluginId]) }
 
   function stateIpc() { return JSON.stringify(Model.stateReport(parsed, panels)) }
+
+  Component.onCompleted: ServiceLink.register(root)
+  Component.onDestruction: ServiceLink.unregister(root)
 
   Timer {
     interval: 150
@@ -53,7 +60,7 @@ Scope {
 
   FileView {
     id: statusFile
-    path: "/run/workstation-cpu-limits/status.json"
+    path: root.statusPath
     printErrors: false
     onLoaded: root.parsed = Model.parseStatus(text(), Date.now() / 1000)
     onLoadFailed: root.parsed = Model.parseStatus("", Date.now() / 1000)

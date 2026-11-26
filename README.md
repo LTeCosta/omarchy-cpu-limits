@@ -95,7 +95,7 @@ An invalid `settings.json` is recovered with `--reset all` or `--set all '<json>
 
 ## Bar widget
 
-The plugin's service (`Service.qml`) reads `status.json` in the shell process once for every monitor's bar, every 2 s while any monitor's panel is open and every 10 s otherwise. Each monitor's widget binds to it and keeps its own panel, drafts and keyboard cursor; after a save, the service re-reads the status so every bar shows it. A status with another schema is refused, and the panel asks to restart the shell or the service. The icon takes the bar's urgent color on an error or a stale status (older than 10 s, a stopped service) and the accent color while throttling. The tooltip shows temperature, power, load and ceilings. The `barLabel` setting (`None`, `Temperature`, `Power`) adds a reading beside the icon.
+The plugin's service (`Service.qml`) reads `status.json` in the shell process once for every monitor's bar, every 2 s while any monitor's panel is open and every 10 s otherwise. Each monitor's widget binds to it and keeps its own panel, drafts and keyboard cursor; after a save, the service re-reads the status so every bar shows it. The widget works under the built-in bar and under replacement bars: it takes the service from `bar.shell.serviceFor()` when the bar's shell hands it out, and otherwise from `ServiceLink.js`, a registry the service joins when it starts and leaves when it stops, so a service that loads late or is reloaded is picked up. Until a service is there, the widget shows a neutral "Reading CPU status…" and asks for a refresh over IPC. A status with another schema is refused, and the panel asks to restart the shell or the service. The icon takes the bar's urgent color on an error or a stale status (older than 10 s, a stopped service) and the accent color while throttling. The tooltip shows temperature, power, load and ceilings. The `barLabel` setting (`None`, `Temperature`, `Power`) adds a reading beside the icon.
 
 The panel shows package power, temperature, load and fan speed, the throttling line and any warnings. For the selected profile it has one row per core group (ceiling, a marker at the live average clock, and the peak clock), the turbo switch, and PL1/PL2 rows. A power row shows the profile's MSR setting, or its firmware value, or the live MSR reading; its caption gives the effective limit and the MMIO value, and turns to the accent color when the shown value is above the MMIO limit.
 
@@ -117,7 +117,7 @@ omarchy-shell io.github.ltecosta.cpu-limits state
 omarchy-shell io.github.ltecosta.cpu-limits refresh
 ```
 
-The service owns the IPC target. `open`, `show` and `toggle` act on the focused monitor's panel through `omarchy-shell shell summon|toggle`, and `close` and `hide` close the open panel through `omarchy-shell shell hide`. `state` prints `kind`, the active `profile` and `error` from the status, `selected` and `dirty` from an open panel (else from the first monitor's widget), and `opened`, whether any panel is open. `refresh` re-reads the status.
+The service owns the IPC target. `open`, `show` and `toggle` act on the focused monitor's panel through `omarchy-shell shell summon|toggle`, and `close` and `hide` close the open panel through `omarchy-shell shell hide`. `state` prints `kind`, the active `profile` and `error` from the status, `selected` and `dirty` from an open panel (else from one monitor's widget), and `opened`, whether any panel is open. `refresh` re-reads the status.
 
 ## Checks
 
@@ -135,8 +135,9 @@ Disable `cpu-frequency-limits.service`, run `omarchy plugin disable io.github.lt
 ## Development
 
 ```bash
-node --test                                  # Model.js
+node --test                                  # Model.js and ServiceLink.js
 python3 -B -m unittest discover -s tests     # the helper against a simulated sysfs, and the check
+bash tests/service.smoke.sh                  # Service.qml and two widgets in a headless Quickshell
 ```
 
 ## License
