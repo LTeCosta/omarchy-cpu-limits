@@ -19,12 +19,17 @@ The power profile still chooses the governor, minimum frequency and energy-perfo
 | systemd unit | `/etc/systemd/system/cpu-frequency-limits.service` | `examples/cpu-frequency-limits.service` |
 | PolicyKit actions | `/usr/share/polkit-1/actions/org.workstation.cpu-limits.policy` | `examples/org.workstation.cpu-limits.policy` |
 | Default ceilings | `/etc/tmpfiles.d/cpu-performance.conf` | `examples/cpu-performance.conf`, adjusted to the CPU |
-| Bar widget and plugin service | `~/.config/omarchy/plugins/io.github.ltecosta.cpu-limits/` | this directory |
-| Check | run from the checkout | `backend/check.py` |
+| Bar widget and plugin service | `~/.config/omarchy/plugins/io.github.ltecosta.cpu-limits/` | this repository |
+| Check | run from a clone of this repository or the installed plugin directory | `backend/check.py` |
 
 ## Install
 
+Install the plugin, then the root helper, service and system files. The `sudo install` commands run from a clone of this repository or from the installed plugin directory `~/.config/omarchy/plugins/io.github.ltecosta.cpu-limits/`.
+
 ```bash
+omarchy plugin add https://github.com/LTeCosta/omarchy-cpu-limits.git
+cd ~/.config/omarchy/plugins/io.github.ltecosta.cpu-limits
+
 sudo install -o root -g root -m 0755 backend/cpu-limits.py /usr/local/libexec/workstation-cpu-limits
 sudo install -o root -g root -m 0644 examples/cpu-frequency-limits.service /etc/systemd/system/
 sudo install -o root -g root -m 0644 examples/org.workstation.cpu-limits.policy /usr/share/polkit-1/actions/
@@ -33,12 +38,12 @@ sudo systemd-tmpfiles --create /etc/tmpfiles.d/cpu-performance.conf
 sudo systemctl daemon-reload
 sudo systemctl enable --now cpu-frequency-limits.service
 
-# from the repository root
-scripts/install cpu-limits
 omarchy plugin enable io.github.ltecosta.cpu-limits
 ```
 
 Write `cpu-performance.conf` for your CPU from the example: one `scaling_max_freq` line per cpufreq policy, the same value for every policy of a core group.
+
+Update the plugin with `omarchy plugin update io.github.ltecosta.cpu-limits`, then reinstall `backend/cpu-limits.py` and the `examples/` files if they changed.
 
 ## Service
 
@@ -133,6 +138,8 @@ journalctl -u cpu-frequency-limits.service -b
 Disable `cpu-frequency-limits.service`, run `omarchy plugin disable io.github.ltecosta.cpu-limits`, remove `/etc/tmpfiles.d/cpu-performance.conf` and reboot.
 
 ## Development
+
+Run `scripts/check` from the repository root to validate the plugin and run all of its tests, or run the suites one by one:
 
 ```bash
 node --test                                  # Model.js and ServiceLink.js
